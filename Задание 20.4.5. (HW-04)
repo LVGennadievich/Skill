@@ -1,0 +1,196 @@
+import json
+# открываем файл в режиме чтения
+with open("translator.json", "r") as my_file:
+    translator_json = my_file.read()
+# преобразовываем строку json в словарь
+orders = json.loads(translator_json)
+print(orders)
+
+max_price = 0
+max_order = ''
+# цикл по заказам
+for order_num, orders_data in orders.items():
+    # получаем стоимость заказа
+    price = orders_data['price']
+    # если стоимость больше максимальной - запоминаем номер и стоимость заказа
+    if price > max_price:
+        max_order = order_num
+        max_price = price
+print(f'Номер заказа с самой большой стоимостью: {max_order}, стоимость заказа: {max_price}')
+
+
+import json
+# открываем файл в режиме чтения
+with open("translator.json", "r") as my_file:
+    translator_json = my_file.read()
+# преобразовываем строку json в словарь
+orders = json.loads(translator_json)
+print(orders)
+
+max_quantity = -1
+max_quantity_order_id = Noneimport json
+from collections import Counter
+from datetime import datetime
+
+# открываем файл в режиме чтения
+with open("translator.json", "r") as my_file:
+    translator_json = my_file.read()
+
+# преобразовываем строку json в словарь
+orders = json.loads(translator_json)
+
+# Создаем счетчик для дат
+date_counter = Counter()
+
+# Перебираем все заказы
+for order_id, details in orders.items():
+    date_str = details.get('date', '')
+    try:
+        # Предположим, что в исходных данных дата в формате 'YYYY-DD-MM'
+        # Разбираем строку
+        year, day, month = date_str.split('-')
+        # Формируем новую строку в формате 'YYYY-DD-MM'
+        new_date_str = f"{year}-{day}-{month}"
+        # Парсим дату, указывая точный формат
+        date_obj = datetime.strptime(new_date_str, '%Y-%d-%m')
+        # Проверяем, что это июль
+        if date_obj.month == 7:
+            date_counter[date_obj.day] += 1
+    except (ValueError, IndexError) as e:
+        print(f"Ошибка при обработке даты '{date_str}' для заказа {order_id}: {e}")
+
+# Находим день в июле с максимальным количеством заказов
+max_day = None
+max_orders = 0
+for day, count in date_counter.items():
+    if count > max_orders:
+        max_orders = count
+        max_day = day
+
+if max_day is not None:
+    print(f"День в июле с наибольшим количеством заказов: {max_day} июля")
+# Перебираем все заказы
+for order_id, details in orders.items():
+    quantity = details['quantity']
+    if quantity > max_quantity:
+        max_quantity = quantity
+        max_quantity_order_id = order_id
+
+print(f"Номер заказа с самым большим количеством товаров: {max_quantity_order_id}")
+
+
+import json
+from collections import Counter
+from datetime import datetime
+
+# Открываем файл с данными
+with open("translator.json", "r") as my_file:
+    translator_json = my_file.read()
+
+# Загружаем данные
+orders = json.loads(translator_json)
+
+# Создаем счетчик для пользователей
+user_counter = Counter()
+
+# Проходим по всем заказам
+for order_id, details in orders.items():
+    date_str = details['date']
+    # Предположим формат даты 'YYYY-DD-MM'
+    date_obj = datetime.strptime(date_str, '%Y-%d-%m')
+    # Проверяем, что это июль
+    if date_obj.month == 7:
+        user_id = details['user_id']  # Предполагается, что есть поле user_id
+        user_counter[user_id] += 1
+
+# Находим пользователя с наибольшим числом заказов
+if user_counter:
+    top_user_id, max_orders = user_counter.most_common(1)[0]
+    print(f"Пользователь с ID {top_user_id} сделал самое большое количество заказов за июль — {max_orders}.")
+
+
+import json
+from collections import defaultdict
+from datetime import datetime
+
+# Читаем данные из файла
+with open("translator.json", "r") as my_file:
+    orders = json.load(my_file)
+
+# Создаем словарь для накопления стоимости заказов каждого пользователя за июль
+user_costs = defaultdict(float)
+
+for order_id, details in orders.items():
+    date_str = details['date']
+    # Предполагаемый формат даты: 'YYYY-DD-MM'
+    date_obj = datetime.strptime(date_str, '%Y-%d-%m')
+    if date_obj.month == 7:
+        user_id = details['user_id']
+        price = details['price']  # заменил с 'cost' на 'price'
+        user_costs[user_id] += price
+
+# Находим пользователя с максимальной суммарной стоимостью
+if user_costs:
+    top_user_id, max_price = max(user_costs.items(), key=lambda item: item[1])
+    print(f"Пользователь с ID {top_user_id} имеет максимальную сумму заказов за июль — {max_price}.")
+
+import json
+from datetime import datetime
+
+# открываем файл в режиме чтения
+with open("translator.json", "r") as my_file:
+    translator_json = my_file.read()
+
+# преобразовываем строку json в словарь
+orders = json.loads(translator_json)
+
+total_price = 0
+count_orders_in_july = 0
+
+for order_id, details in orders.items():
+    date_str = details.get('date', '')
+    price = details.get('price', 0)
+    try:
+        # Предполагаемый формат даты: 'YYYY-DD-MM'
+        year, day, month = date_str.split('-')
+        new_date_str = f"{year}-{day}-{month}"
+        date_obj = datetime.strptime(new_date_str, '%Y-%d-%m')
+        if date_obj.month == 7:
+            total_price += float(price)
+            count_orders_in_july += 1
+    except (ValueError, IndexError, TypeError) as e:
+        print(f"Ошибка при обработке даты или цены '{date_str}', заказ {order_id}: {e}")
+
+if count_orders_in_july > 0:
+    average_price = total_price / count_orders_in_july
+    print(f"Средняя цена заказов в июле: {average_price:.2f}")
+
+
+import json
+from datetime import datetime
+
+# Открываем файл и читаем данные
+with open("translator.json", "r") as my_file:
+    data = json.load(my_file)
+
+total_price = 0
+count_items_in_july = 0
+
+for item_id, details in data.items():
+    date_str = details.get('date', '')
+    price = details.get('price', 0)
+    try:
+        # Предполагаемый формат: 'YYYY-DD-MM'
+        year, day, month = date_str.split('-')
+        formatted_date = f"{year}-{day}-{month}"
+        date_obj = datetime.strptime(formatted_date, '%Y-%d-%m')
+        if date_obj.month == 7:
+            total_price += float(price)
+            count_items_in_july += 1
+    except (ValueError, IndexError, TypeError) as e:
+        print(f"Ошибка при обработке даты или цены для товара {item_id}: {e}")
+
+if count_items_in_july > 0:
+    average_price = total_price / count_items_in_july
+    print(f"Средняя стоимость товаров в июле: {average_price:.2f}")
+
