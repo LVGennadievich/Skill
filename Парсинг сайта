@@ -1,0 +1,169 @@
+**Постановка задачи:**  
+Цель проекта — разработать модуль парсинга Letterboxd, который по уникальному идентификатору пользователя возвращает список фильмов, оцененных этим пользователем, вместе с их рейтингами и метаданными. Этот модуль должен быть подготовлен к интеграции в расширенную систему рекомендаций, использующую данные из различных сетей о кино. В будущем возможно расширение функционала для сбора других пользовательских данных или автоматизации аналитики.
+
+**Обоснование:**  
+Создание такого парсера позволит собрать структурированные данные о предпочтениях пользователей Letterboxd, что важно для построения рекомендательных систем и анализа пользовательского поведения. Горизонтальное расширение этой системы может позволить объединить информацию из остальных кино-сервисов, создавая универсальную платформу для оценки, рекомендаций и аналитики.
+
+---
+
+**Архитектура и реализация:**
+
+- **Класс `LetterboxdParser`:**  
+  - Метод `get_user_reviews(user_id)` — возвращает список фильмов и оценок пользователя по его уникальному ID.  
+  - Метод `_fetch_user_page(user_id)` — осуществляет загрузку страницы профиля пользователя.  
+  - Метод `_parse_reviews(html)` — парсит HTML-страницу для извлечения данных по фильмам.  
+  - Метод `save_to_json(data, filename)` — сохраняет результаты в JSON файл.  
+  - Метод `save_to_csv(data, filename)` — сохраняет результаты в CSV файл.
+
+- **Зависимости:**  
+  Для парсинга — `requests` для загрузки страниц, `BeautifulSoup` для парсинга HTML.  
+  Для подготовки к повторному использованию — реализованы как отдельные функции или методы класса без внешних зависимостей (кроме стандартных библиотек и указанных выше).
+
+---
+
+**Пример использования:**
+
+```python
+parser = LetterboxdParser()
+user_reviews = parser.get_user_reviews('someUserId')
+parser.save_to_json(user_reviews, 'reviews.json')
+```
+
+---
+
+**Выходные данные:**  
+- В JSON и CSV файлах будет список объектов, например:
+
+```json
+[
+  {
+    "film_title": "Inception",
+    "my_rating": 4.5,
+    "year": 2010,
+    "poster_url": "https://..."
+  },
+  ...
+]
+```
+
+---
+
+**Файл `README.md`** содержит инструкции:
+
+- Установка зависимостей (`pip install requests beautifulsoup4`)
+- Как запустить парсер с нужным ID пользователя
+- Примеры команд и формат результатов
+
+________________________________________________________________________________________________________________________________________________________________________________________
+
+
+
+
+import requests
+from bs4 import BeautifulSoup
+import json
+import csv
+import time
+
+class LetterboxdParser:
+    BASE_URL = "https://letterboxd.com"
+    
+    def __init__(self):
+        self.session = requests.Session()
+
+    def get_user_reviews(self, user_id, max_pages=5):
+        """
+        Получает список фильмов, оцененных пользователем.
+        :param user_id: уникальный id пользователя, например 'user/username'
+        :param max_pages: максимум страниц для парсинга (чтобы не загружать слишком много)
+        :return: список словарей с данными по фильмам
+        """
+        reviews = []
+        page = 1
+        while page <= max_pages:
+            url = f"{self.BASE_URL}/{user_id}/reviews/stream/"
+            params = {'page': page}
+            print(f"Загружаем страницу {page}: {url}")
+            response = self.session.get(url, params=params)
+            if response.status_code != 200:
+                print(f"Ошибка загрузки страницы: статус {response.status_code}")
+                break
+            soup = BeautifulSoup(response.text, 'html.parser')
+            page_reviews = self._parse_reviews(soup)
+            if not page_reviews:
+                break
+            reviews.extend(page_reviews)
+            page += 1
+            time.sleep(1)  # чтобы не перегружать сервер
+        return reviews
+
+    def _parse_reviews(self, soup):
+        """
+        Парсит содержимое страницы и извлекает оценки фильмов.
+        :param soup: объект BeautifulSoup
+        :return: список фильмов
+        """
+        reviews_list = []
+        review_cards = soup.find_all('li', class_='poster-container')
+        for card in review_cards:
+            try:
+                title_tag = card.find('img', alt=True)
+                title = title_tag['alt'] if title_tag else 'Unknown'
+
+                film_link = card.find('a', class_='frame')
+                film_href = film_link['href'] if film_link else ''
+                film_url = self.BASE_URL + film_href
+
+                poster_url = title_tag['src'] if title_tag else ''
+
+                # В некоторых случаях оценка может отсутствовать
+                rating_tag = card.find('div', class_='rating')
+                if rating_tag:
+                    rating_str = rating_tag.text.strip()
+                    try:
+                        rating = float(rating_str)
+                    except:
+                        rating = None
+                else:
+                    rating = None
+
+                # Год можно попытаться извлечь из названия или оставить None
+                year = None
+
+                reviews_list.append({
+                    'title': title,
+                    'film_url': film_url,
+                    'poster_url': poster_url,
+                    'my_rating': rating,
+                    'year': year
+                })
+            except Exception as e:
+                print(f"Ошибка при парсинге карточки: {e}")
+        return reviews_list
+
+    def save_to_json(self, data, filename):
+        """
+        Сохраняет данные в JSON файл.
+        """
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+
+    def save_to_csv(self, data, filename):
+        """
+        Сохраняет данные в CSV файл.
+        """
+        keys = ['title', 'film_url', 'poster_url', 'my_rating', 'year']
+        with open(filename, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=keys)
+            writer.writeheader()
+            for item in data:
+                writer.writerow(item)
+
+# Пример использования:
+if __name__ == "__main__":
+    parser = LetterboxdParser()
+    user_id = "user/имя_пользователя"  # замените на актуальный ID пользователя
+    reviews = parser.get_user_reviews(user_id, max_pages=3)
+    parser.save_to_json(reviews, 'letterboxd_reviews.json')
+    parser.save_to_csv(reviews, 'letterboxd_reviews.csv')
+    print("Парсинг завершён. Данные сохранены.")
