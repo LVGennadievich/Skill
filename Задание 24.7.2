@@ -1,0 +1,90 @@
+### 1. Реализация методов в `api.py`
+
+```python
+import requests
+
+BASE_URL = "https://petfriends.skillfactory.ru"
+
+def get_pets_list(auth_token):
+    """Получить список всех питомцев."""
+    headers = {"Authorization": f"Token {auth_token}"}
+    response = requests.get(f"{BASE_URL}/api/pets/", headers=headers)
+    return response
+
+def add_new_pet(auth_token, name, animal_type, age, pet_photo_path):
+    """Добавить нового питомца с фото."""
+    headers = {"Authorization": f"Token {auth_token}"}
+    with open(pet_photo_path, 'rb') as pet_photo:
+        files = {'pet_photo': pet_photo}
+        data = {
+            'name': name,
+            'animal_type': animal_type,
+            'age': age
+        }
+        response = requests.post(f"{BASE_URL}/api/create_pet_simple/", headers=headers, data=data, files=files)
+    return response
+```
+
+### 2. Тестовые сценарии (позитивные) — 10 тестов для API
+
+```python
+import unittest
+from api import get_pets_list, add_new_pet
+
+AUTH_TOKEN = "your_valid_token_here"  # вставьте актуальный токен
+
+class TestPetFriendsAPI(unittest.TestCase):
+
+    def test_get_pets_list_valid_token(self):
+        response = get_pets_list(AUTH_TOKEN)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('pets', response.json())  # предполагается, что ответ содержит список pets
+
+    def test_add_new_pet_valid_data(self):
+        response = add_new_pet(AUTH_TOKEN, "Барсик", "кот", "3", "images/cat.jpg")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('id', response.json())
+
+    def test_get_pets_list_content_type(self):
+        response = get_pets_list(AUTH_TOKEN)
+        self.assertEqual(response.headers['Content-Type'], 'application/json')
+
+    def test_add_new_pet_response_fields(self):
+        response = add_new_pet(AUTH_TOKEN, "Мурзик", "кот", "2", "images/cat.jpg")
+        json_response = response.json()
+        self.assertIn('name', json_response)
+        self.assertIn('animal_type', json_response)
+        self.assertIn('age', json_response)
+
+    def test_get_pets_list_non_empty(self):
+        response = get_pets_list(AUTH_TOKEN)
+        pets = response.json().get('pets', [])
+        self.assertIsInstance(pets, list)
+
+    def test_add_new_pet_with_valid_age(self):
+        response = add_new_pet(AUTH_TOKEN, "Тигра", "тигр", "4", "images/tiger.jpg")
+        self.assertEqual(response.status_code, 200)
+
+    def test_response_contains_pet_photo(self):
+        response = add_new_pet(AUTH_TOKEN, "Спайк", "пёс", "5", "images/dog.jpg")
+        self.assertIn('pet_photo', response.json())
+
+    def test_multiple_get_pets_repeatability(self):
+        response1 = get_pets_list(AUTH_TOKEN)
+        response2 = get_pets_list(AUTH_TOKEN)
+        self.assertEqual(response1.json(), response2.json())
+
+    def test_add_pet_with_minimum_data(self):
+        response = add_new_pet(AUTH_TOKEN, "Мини", "кот", "1", "images/cat.jpg")
+        self.assertEqual(response.status_code, 200)
+
+    def test_pets_list_contains_expected_fields(self):
+        response = get_pets_list(AUTH_TOKEN)
+        pet = response.json()['pets'][0]
+        self.assertIn('name', pet)
+        self.assertIn('animal_type', pet)
+        self.assertIn('age', pet)
+        self.assertIn('pet_photo', pet)
+
+if __name__ == '__main__':
+    unittest.main()
