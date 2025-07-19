@@ -1,0 +1,67 @@
+1. Создаём структуру проекта:
+```
+calculator_project/
+│
+├── calculator/
+│   ├── __init__.py
+│   ├── calculator.py
+│
+├── tests/
+│   ├── __init__.py
+│   ├── test_calculator.py
+│
+└── run_tests.py
+```
+
+2. В файл `calculator/calculator.py` добавляем методы калькулятора:
+```python
+class Calculator:
+    def add(self, a, b):
+        return a + b
+
+    def subtract(self, a, b):
+        return a - b
+
+    def multiply(self, a, b):
+        return a * b
+
+    def divide(self, a, b):
+        if b == 0:
+            raise ValueError("Cannot divide by zero")
+        return a / b
+```
+
+3. В файл `tests/test_calculator.py` пишем позитивные тесты для каждого метода:
+```python
+import unittest
+from calculator.calculator import Calculator
+
+class TestCalculator(unittest.TestCase):
+    def setUp(self):
+        self.calc = Calculator()
+
+    def test_add_positive(self):
+        self.assertEqual(self.calc.add(3, 5), 8)
+
+    def test_subtract_positive(self):
+        self.assertEqual(self.calc.subtract(10, 4), 6)
+
+    def test_multiply_positive(self):
+        self.assertEqual(self.calc.multiply(6, 7), 42)
+
+    def test_divide_positive(self):
+        self.assertEqual(self.calc.divide(20, 4), 5)
+
+if __name__ == '__main__':
+    unittest.main()
+```
+
+4. В файл `run_tests.py` для удобства запуска тестов:
+```python
+import unittest
+
+loader = unittest.TestLoader()
+suite = loader.discover('tests')
+
+runner = unittest.TextTestRunner()
+runner.run(suite)
